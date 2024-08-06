@@ -29,16 +29,17 @@ config = {
 
 def process_table(dag_id: str, database: str, ti, execution_date):
     print(f"{dag_id} start processing tables in database: {database}")
-    # ti.xcom_push(key='execution_date', value=execution_date)
 
-def send_run_id(ti):
-    ti.xcom_push(key="run_id", value="{{ run_id }} ended")
+def send_run_id(ti, **context):
+    hook = PostgresHook(postgres_conn_id='postgres_test')
+    execution_date_ = context['execution_date']
+    run_id_ = context['run_id']
+    query = hook.get_records(sql=f"insert into custom_run_id values ('{execution_date_}', '{run_id_} ended')")
+
+    ti.xcom_push(key="run_id", value=f"{run_id_} ended")
 
 def check_table(dag_id):
-    """ method to check that table exists """
     hook = PostgresHook(postgres_conn_id="postgres_test")
-    # query = hook.get_records(sql="SELECT * FROM pg_tables;")
-    # query = hook.get_records(sql="SELECT * FROM information_schema.tables WHERE table_schema = 'airflow' AND table_name = 'table_name_2';")
     query = hook.get_records(sql=f"SELECT * FROM information_schema.tables WHERE table_name = '{config[dag_id]["table_name"]}';")
     print(f"queryResult: {query}")
     print(f"query result type: {type(query)}")
@@ -65,13 +66,6 @@ for i in config.keys():
             conn_id="postgres_test",
             sql=f"INSERT INTO {config[i]["table_name"]} VALUES(" + str(uuid.uuid4().int % 123456789) + ", '{{ ti.xcom_pull(task_ids='get_current_user', key='return_value') }}', '" + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "');"
         )
-
-        # query_table = SQLExecuteQueryOperator(
-        #     task_id="query_table",
-        #     trigger_rule="none_failed",
-        #     conn_id="postgres_test",
-        #     sql="SELECT COUNT(*) FROM " + config[i]["table_name"] + ";"
-        # )
 
         query_table = PostgreSQLCountRows(
             task_id="query_table",
@@ -103,6 +97,3 @@ for i in config.keys():
         )
 
         task1 >> get_user >> check_table_exists >> create_table >> insert_row >> query_table >> run_id
-
-    # globals()[i] = dag
-

@@ -13,6 +13,7 @@ from airflow.sensors.filesystem import FileSensor
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.operators.bash import BashOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 from slack import WebClient
 from slack.errors import SlackApiError
@@ -25,7 +26,6 @@ from smart_file_sensor import SmartFileSensor
 def send_slack_message():
     connection = BaseHook.get_connection("slack_conn")
     slack_token = Variable.get(key="slack_token")
-    # slack_token = connection.extra_dejson.get("token")
     print(slack_token)
     client = WebClient(token=slack_token)
 
@@ -37,7 +37,6 @@ def send_slack_message():
     except SlackApiError as e:
         # You will get a SlackApiError if "ok" is False
         print(e.response["error"])
-        # str like 'invalid_auth', 'channel_not_found'
 
 default_args = {
     "start_date": datetime(2024, 7, 19)
@@ -46,16 +45,14 @@ default_args = {
 path = Variable.get("path_name", default_var="test.txt")
 
 def get_date_difference(dt, ti):
-    # execution_date = dt
     another_date = datetime.fromisoformat(ti.xcom_pull(key="trigger_logical_date_iso"))
-    # date_difference = another_date - execution_date
     return another_date
 
-def show_external_run_id(**kwargs):
-    ti = kwargs["ti"]
-    message = ti.xcom_pull(dag_id="dag_id_2_" + config["dag_id_2"]["table_name"], task_ids="run_id", key="run_id")
+def show_external_run_id():
+    hook = PostgresHook(postgres_conn_id='postgres_test')
+    query = hook.get_records(sql=f"select run_id from custom_run_id where timestamp = (select max(timestamp) from custom_run_id);")
+    message = query[0][0]
     print(message)
-    print(kwargs)
 
 with DAG(
     dag_id="trigger_dag",
