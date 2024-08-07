@@ -65,6 +65,9 @@ x-airflow-common:
 #    AIRFLOW__SMART__SENSOR__USE_SMART_SENSOR: True
 #    AIRFLOW__SMART_SENSOR__SENSORS_ENABLED: SmartFileSensor
 #    AIRFLOW__SMART__SENSOR__SENSORS_ENABLED: SmartFileSensor
+    # connection
+    AIRFLOW_CONN_SENSOR: '{"conn_type": "fs", "extra": {"path": "/tmp"}}'
+    AIRFLOW_CONN_POSTGRES_TEST: '{"conn_type": "postgres", "host": "postgres", "login": "airflow", "password": "airflow", "schema": "airflow", "port": 5432}'
     # end
 
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
