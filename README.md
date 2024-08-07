@@ -18,11 +18,11 @@ vault kv put airflow/variables/slack_token value=xoxb-7469760031683-749297450137
 
 After that go to localhost:8080, created dags will be there (username: airflow, password: airflow).
 
-Trigger_dag needs a file zupa.txt to be created, in order to start. To create this file:
+Trigger_dag needs a file test.txt to be created, in order to start. To create this file:
 - find id of worker
 - Execute:
 ```bash
 docker exec -it WORKER_DOCKER_ID /bin/bash
 cd /tmp
-touch zupa.txt
+touch test.txt
 ```
