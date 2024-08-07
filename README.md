@@ -16,4 +16,4 @@ vault secrets enable -path=airflow -version=2 kv
 vault kv put airflow/variables/slack_token value=xoxb-7469760031683-7492974501376-3giEHbwG3x825nhVw7vUROyn
 ```
 
-After that go to localhost:8080, created dags will be there.
+After that go to localhost:8080, created dags will be there (username: airflow, password: airflow).

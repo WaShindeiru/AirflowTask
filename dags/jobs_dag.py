@@ -48,6 +48,15 @@ def check_table(dag_id):
     else:
         return "create_table"
 
+def check_table_run_id():
+    hook = PostgresHook(postgres_conn_id="postgres_test")
+    query = hook.get_records(sql="select * from information_schema.tables where table_name = 'custom_run_id';")
+    print(f"queryResult: {query}")
+    if query:
+        return "run_id"
+    else:
+        return "create_run_id_table"
+
 for i in config.keys():
     with DAG(
         dag_id = i + "_" + config[i]["table_name"],
@@ -91,9 +100,21 @@ for i in config.keys():
             bash_command="whoami"
         )
 
-        run_id = PythonOperator(
-            task_id="run_id",
-            python_callable=send_run_id
+        check_table_run_id_exists = BranchPythonOperator(
+            task_id = "check_table_run_id_exists",
+            python_callable = check_table_run_id
         )
 
-        task1 >> get_user >> check_table_exists >> create_table >> insert_row >> query_table >> run_id
+        create_run_id_table = SQLExecuteQueryOperator(
+            task_id="create_run_id_table",
+            conn_id="postgres_test",
+            sql=f"create table custom_run_id (timestamp TIMESTAMP NOT NULL, run_id varchar(50) not null);"
+        )
+
+        run_id = PythonOperator(
+            task_id="run_id",
+            python_callable=send_run_id,
+            trigger_rule="none_failed"
+        )
+
+        task1 >> get_user >> check_table_exists >> create_table >> insert_row >> query_table >> check_table_run_id_exists >> create_run_id_table >> run_id
